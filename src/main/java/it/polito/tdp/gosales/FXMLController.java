@@ -1,9 +1,14 @@
 package it.polito.tdp.gosales;
 
 import java.net.URL;
+import java.util.List;
 import java.util.ResourceBundle;
 
+import it.polito.tdp.gosales.model.Arco;
+import it.polito.tdp.gosales.model.Connessa;
 import it.polito.tdp.gosales.model.Model;
+import it.polito.tdp.gosales.model.Products;
+import it.polito.tdp.gosales.model.Retailers;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -31,16 +36,16 @@ public class FXMLController {
     private Button btnSimula;
 
     @FXML
-    private ComboBox<?> cmbAnno;
+    private ComboBox<Integer> cmbAnno;
 
     @FXML
-    private ComboBox<?> cmbNazione;
+    private ComboBox<String> cmbNazione;
 
     @FXML
-    private ComboBox<?> cmbProdotto;
+    private ComboBox<Products> cmbProdotto;
 
     @FXML
-    private ComboBox<?> cmbRivenditore;
+    private ComboBox<Retailers> cmbRivenditore;
 
     @FXML
     private TextArea txtArchi;
@@ -62,16 +67,100 @@ public class FXMLController {
 
     @FXML
     void doAnalizzaComponente(ActionEvent event) {
+    	int anno = this.cmbAnno.getSelectionModel().getSelectedItem();
+    	Retailers r = null;
+    	try {
+    		r = this.cmbRivenditore.getSelectionModel().getSelectedItem(); 
+    		Connessa c = this.model.getCompConn(r);
+    		this.txtResult.appendText("La componente connessa di "+r+"ha dimensione "+c.getNumConn()+"\n");
+    		this.txtResult.appendText("Il peso totale degli archi della componente connessa è "+c.getPeso()+"\n");
+    		
+    		this.cmbProdotto.getItems().clear();
+    		this.cmbProdotto.getItems().addAll(this.model.getRetailerYear(r,anno));
+    		
+    		this.cmbProdotto.setDisable(false);
+    		this.txtN.setDisable(false);
+    		this.txtQ.setDisable(false);
+    		this.btnSimula.setDisable(false);
+    		this.txtN.clear();
+    		this.txtQ.clear();
+    		
+    	}catch(Exception e ) {
+    		this.txtResult.setText("Selezionare un rivenditore");
+    	}
+    	
 
     }
 
     @FXML
     void doCreaGrafo(ActionEvent event) {
+    	int anno = 0;
+    	String country;
+    	int m = 0;
+    	try {
+    		anno = this.cmbAnno.getSelectionModel().getSelectedItem();
+    		country = this.cmbNazione.getSelectionModel().getSelectedItem();
+    		m = Integer.parseInt(this.txtNProdotti.getText());
+    		
+    		if(country==null) {
+    			this.txtResult.setText("Selezionare un paese valido");
+    			return;
+    		}
+    		
+    		if(m ==0) {
+    			this.txtResult.setText("Inserire un numero");
+    			return;
+    		}
+    		
+    		this.model.creaGrafo(country, anno, m);
+    		
+    		this.cmbRivenditore.setDisable(false);
+    		this.cmbRivenditore.getItems().addAll(this.model.getVertici());
+    		this.btnAnalizzaComponente.setDisable(false); 
+    		
+    		this.txtResult.clear();
+    		this.txtArchi.clear();
+    		this.txtVertici.clear();
+    		this.txtResult.setText("Grafo creato\n");
+    		this.txtResult.appendText("Con "+this.model.numVer()+" vertici e "+this.model.numEdge()+" archi\n");
+    		List<Retailers> lista = this.model.getVertici();
+    		for(Retailers r : lista) {
+    			this.txtVertici.appendText(r.toString()+"\n");
+    		}
+    		
+    		List<Arco> edges= this.model.getEdge();
+    		for(Arco a : edges) {
+    			this.txtArchi.appendText(a.toString()+"\n");
+    		}
+    		
+    	}catch (NumberFormatException e) {
+    		this.txtResult.setText("Selezionare un anno");
+    	}
 
     }
 
     @FXML
     void doSimulazione(ActionEvent event) {
+    	
+    	int q = 0;
+    	int n = 0;
+    	try {
+    		q = Integer.parseInt(this.txtQ.getText());
+    		n = Integer.parseInt(this.txtN.getText());
+    		
+    		if(q<0) {
+    			this.txtResult.setText("q deve essere un numero positivo");
+    			return;
+    		}
+    		
+    		if(n<0) {
+    			this.txtResult.setText("n deve essere un numero positivo");
+    			return;
+    		}
+    		
+    	}catch(NumberFormatException e) {
+    		
+    	}
 
     }
 
@@ -95,6 +184,9 @@ public class FXMLController {
     
     public void setModel(Model model) {
     	this.model = model;
+    	this.cmbNazione.getItems().setAll(this.model.getCountry());
+    	this.cmbAnno.getItems().addAll(this.model.getYear());
+    	
     }
 
 }
